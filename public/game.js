@@ -56,6 +56,7 @@ export default class Game {
     this.setLights();
     // this.setOrbitControls();
     this.loadEnvironment(loader);
+    // this.loadEnvironmentGlb(glbLoader);
 
     this.animate();
   }
@@ -179,7 +180,7 @@ export default class Game {
     this.scene.add(ambient);
 
     const light = new THREE.DirectionalLight(0xaaaaaa);
-    light.position.set(30, 100, 40);
+    light.position.set(30, 50, 40);
     light.target.position.set(0, 0, 0);
 
     light.castShadow = true;
@@ -201,6 +202,7 @@ export default class Game {
   initLights() {}
 
   setWorld() {
+    this.scene.fog = new THREE.Fog("lightblue", 50, 3000);
     let pos = { x: 0, y: 0, z: 0 };
     let scale = { x: 2000, y: 0, z: 2000 };
     let quat = { x: 0, y: 0, z: 0, w: 10 };
@@ -211,7 +213,7 @@ export default class Game {
 
     var mesh = new THREE.Mesh(
       new THREE.PlaneBufferGeometry(2000, 2000),
-      new THREE.MeshPhongMaterial({ color: 0x999999, depthWrite: false })
+      new THREE.MeshBasicMaterial({ color: 0x567d46, depthWrite: false })
     );
     mesh.rotation.x = -Math.PI / 2;
     mesh.receiveShadow = true;
@@ -243,7 +245,7 @@ export default class Game {
 
     // this.physicsWorld.addRigidBody(body);
 
-    var grid = new THREE.GridHelper(2000, 40, 0x000000, 0x000000);
+    var grid = new THREE.GridHelper(2000, 40, 0x000000, 0x79d021);
     grid.material.opacity = 0.2;
     grid.position.y = 0;
     grid.material.transparent = true;
@@ -263,27 +265,33 @@ export default class Game {
     this.fbxLoader(loader, "trees/tree1.fbx", 0, 155, 980, 0.8, 0);
     this.fbxLoader(loader, "trees/tree4.fbx", 0, 130, -980, 0.8, 0);
     this.fbxLoader(loader, "trees/tree3.fbx", 500, 100, 0, 0.5, 90);
+    this.fbxLoader(loader, "survival/barrel.fbx", 300, 100, 0, 1, 90);
   }
-
+  loadEnvironmentGlb(loader) {
+    this.glbLoader(loader, `${this.assetsPath}fbx/trees/barrel.glb`);
+  }
   fbxLoader(loader, path, x, y, z, scale, rot) {
     const game = this;
+    const newObject = new THREE.Object3D();
     loader.load(`${this.assetsPath}fbx/${path}`, function (object) {
       object.traverse(function (child) {
         if (child.isMesh) {
           child.material.map = null;
           child.castShadow = true;
           child.receiveShadow = false;
+          game.envColliders.push(child);
+          newObject.add(object);
         }
       });
-      object.scale.multiplyScalar(scale);
-      object.position.set(x, y, z);
-      object.rotation.set(0, rot, 0);
-      game.scene.add(object);
-      // this.envColliders.push(object);
+      // this.envColliders.push(object.children);
+      newObject.scale.multiplyScalar(scale);
+      newObject.position.set(x, y, z);
+      newObject.rotation.set(0, rot, 0);
+      game.scene.add(newObject);
     });
   }
 
-  glbLoader() {
+  glbLoader(loader, path, x, y, z, scale, rot) {
     // loader.load(`${this.assetsPath}fbx/trees/barrel.glb`, function (object) {
     //   const sword = object.scene; // sword 3D object is loaded
     //   sword.traverse(function (child) {
