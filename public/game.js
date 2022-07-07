@@ -330,7 +330,7 @@ export default class Game {
           child.castShadow = true;
           child.receiveShadow = false;
           newObject.add(object);
-          // if (collisionBool) game.envColliders.push(child);
+          if (collisionBool) {game.envColliders.push(child)};
         }
       });
       // this.envColliders.push(object.children);
