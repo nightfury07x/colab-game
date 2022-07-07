@@ -1,4 +1,4 @@
-import FloorMaterial from "../Materials/Floor.js";
+import FloorMaterial from "../materials/Floor.js";
 
 export default class Floor {
   constructor() {
