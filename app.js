@@ -3,7 +3,7 @@ var express = require("express");
 var app = express();
 var server = app.listen(3000);
 
-app.use(express.static("../public"));
+app.use(express.static("./public"));
 console.log("server is running");
 
 var socket = require("socket.io");
@@ -62,7 +62,7 @@ function myConnection(socket) {
     socket.boxData.y = data.y;
     socket.boxData.z = data.z;
 
-    boxData[data.index] = {x: data.x, y: data.y, z: data.z};
+    boxData[data.index] = { x: data.x, y: data.y, z: data.z };
     socket.broadcast.emit("updateMovingBox", socket.boxData);
   });
 }
