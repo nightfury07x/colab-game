@@ -180,7 +180,7 @@ export default class Game {
     this.scene.add(ambient);
 
     const light = new THREE.DirectionalLight(0xaaaaaa);
-    light.position.set(30, 50, 40);
+    light.position.set(30, 100, 40);
     light.target.position.set(0, 0, 0);
 
     light.castShadow = true;
@@ -268,7 +268,7 @@ export default class Game {
 
     // this.physicsWorld.addRigidBody(body);
 
-    var grid = new THREE.GridHelper(2000, 40, 0x000000, 0x79d021);
+    var grid = new THREE.GridHelper(2000, 40, 0x000000, 0x999999);
     grid.material.opacity = 0.2;
     grid.position.y = 0;
     grid.material.transparent = true;
