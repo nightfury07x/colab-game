@@ -300,19 +300,17 @@ export default class Game {
 
   setLights() {
     this.scene.background = new THREE.Color(0x00a0f0);
-    const ambient = new THREE.AmbientLight(0xffffff);
-    // const ambient = new THREE.AmbientLight(0xaaaaaa);
-    this.scene.add(ambient);
+    const ambient = new THREE.AmbientLight(0xaaaaaa);
 
-    const light = new THREE.DirectionalLight(0xffffe0, 1);
-    light.position.set(300, 200, -300);
+    const light = new THREE.DirectionalLight(0xaaaaaa);
+    light.position.set(30, 100, 40);
     light.target.position.set(0, 0, 0);
 
     light.castShadow = true;
 
     const lightSize = 500;
     light.shadow.camera.near = 1;
-    light.shadow.camera.far = 2000;
+    light.shadow.camera.far = 5000;
     light.shadow.camera.left = light.shadow.camera.bottom = -lightSize;
     light.shadow.camera.right = light.shadow.camera.top = lightSize;
 
@@ -374,37 +372,9 @@ export default class Game {
   }
 
   setWorld() {
-    const floor = new Floor();
-    this.scene.add(floor);
-
-    const texture = new THREE.TextureLoader().load("../assets/gravel.jpg");
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(10, 10);
-
-    // var mesh = new THREE.Mesh(
-    //   new THREE.PlaneBufferGeometry(2000, 2000),
-    //   new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
-    // );
-
-    var mesh = new THREE.Mesh(
-      new THREE.PlaneBufferGeometry(2000, 2000),
-      // new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, metalness: 0})
-      new THREE.MeshPhongMaterial({
-        color: "red",
-        depthWrite: false,
-        reflectivity: 0.0,
-        shininess: 0,
-      })
-    );
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.receiveShadow = true;
-    this.scene.add(mesh);
-
     // SKY BOX
 
     const tgaLoader = new THREE.TGALoader();
-    const bitmapLoader = new THREE.ImageBitmapLoader();
     const image = "interstellar";
     const imgType = ".tga";
     const materialArray = this.createMaterialArray(image, imgType, tgaLoader);
@@ -414,6 +384,30 @@ export default class Game {
     this.skybox = skybox;
 
     this.scene.add(skybox);
+
+    // this.scene.fog = new THREE.Fog("white", 100, 6000);
+
+    // const floor = new Floor();
+    // this.scene.add(floor);
+
+    const texture = new THREE.TextureLoader().load("../assets/gravel.jpg");
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(10, 10);
+
+    var mesh = new THREE.Mesh(
+      new THREE.PlaneBufferGeometry(2000, 2000),
+      // new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, metalness: 0})
+      new THREE.MeshPhongMaterial({
+        color: 0x999999,
+        depthWrite: false,
+        reflectivity: 0.0,
+        shininess: 0,
+      })
+    );
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.receiveShadow = true;
+    this.scene.add(mesh);
 
     // MARKER
     const markerGeo = new THREE.BoxGeometry(100, 2, 100);
@@ -433,32 +427,6 @@ export default class Game {
     rectLight.position.set(0, 2, 0);
     rectLight.lookAt(0, 1, 0);
     // this.scene.add(rectLight);
-
-    // let transform = new Ammo.btTransform();
-    // transform.setIdentity();
-    // transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
-    // transform.setRotation(
-    //   new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w)
-    // );
-    // let motionState = new Ammo.btDefaultMotionState(transform);
-
-    // let colShape = new Ammo.btBoxShape(
-    //   new Ammo.btVector3(scale.x * 0.5, scale.y * 0.5, scale.z * 0.5)
-    // );
-    // colShape.setMargin(0.05);
-
-    // let localInertia = new Ammo.btVector3(0, 0, 0);
-    // colShape.calculateLocalInertia(mass, localInertia);
-
-    // let rbInfo = new Ammo.btRigidBodyConstructionInfo(
-    //   mass,
-    //   motionState,
-    //   colShape,
-    //   localInertia
-    // );
-    // let body = new Ammo.btRigidBody(rbInfo);
-
-    // this.physicsWorld.addRigidBody(body);
 
     var grid = new THREE.GridHelper(2000, 40, 0x000000, 0x999999);
     grid.material.opacity = 0.2;
@@ -812,6 +780,7 @@ export default class Game {
 
     if (this.gameOver) {
       setTimeout(() => {
+        // this.scene.fog = new THREE.Fog("white", 5000, 15000);
         this.createSmoke(this.rocket);
       }, 1000);
     }
