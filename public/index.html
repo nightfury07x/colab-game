@@ -3,8 +3,22 @@
     <title>Final</title>
     <!-- <meta name="viewport" content="width=device-width,initial-scale=1" /> -->
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap');
       body {
         margin: 0;
+      }
+      #timer{
+        position: fixed;
+        font-family: 'Roboto', sans-serif;
+        color: white;
+        background-color:rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        margin: 0;
+        display: inline-flex;
+        width: 170px;
+        height: 70px;
+        font-size: 50px;
+        
       }
     </style>
 
@@ -27,5 +41,10 @@
     <script src="libs/ammo.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script type="module" src="index.js"></script>
+    <h1 id="timer">5:00</h1>
+    <div class="gameover-screen" class="screen" style="display:none">
+      <h1>Game Over</h1>
+      <button onclick="startGame()">Start Game</button>
+    </div>
   </body>
 </html>
