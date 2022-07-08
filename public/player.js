@@ -80,7 +80,7 @@ class Player {
 
       player.object = new THREE.Object3D();
       player.object.scale.multiplyScalar(0.25);
-      //   player.object.position.set(3122, 0, -173);
+
       player.object.rotation.set(0, 0, 0);
 
       player.object.add(object);
@@ -89,7 +89,7 @@ class Player {
       if (player.deleted === undefined) {
         console.log("adding player to scene");
         game.scene.add(player.object);
-        player.object.position.copy(new THREE.Vector3(0, 0, 0));
+        player.object.position.copy(new THREE.Vector3(0, 0, -100));
         console.log("POSITION ", player.object.position);
       }
 
@@ -240,6 +240,12 @@ class Player {
           this.action = anim;
           break;
         case "backward":
+          // if (intersect1.length > 0) {
+          //   if (intersect1[0].distance < 60) {
+          //     return;
+          //   }
+          // }
+
           this.object.position.add(
             this.currDir.clone().multiplyScalar((dt * -speed) / 2)
           );

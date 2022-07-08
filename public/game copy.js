@@ -13,9 +13,26 @@ export default class Game {
 
     this.assetsPath = "../assets/";
 
+    this.boxTypes = {
+      type1: {
+        tag: "TYPE_1",
+        color: "#feca57",
+      },
+      type2: {
+        tag: "TYPE_2",
+        color: "#54a0ff",
+      },
+      type3: {
+        tag: "TYPE_3",
+        color: "#ee5253",
+      },
+      type4: {
+        tag: "TYPE_4",
+        color: "#1dd1a1",
+      },
+    };
+
     this.container = document.createElement("div");
-    // this.container.style.height = "10vh";
-    // this.container.style.width = "10vw";
     document.body.appendChild(this.container);
 
     this.width = this.container.offsetWidth;
@@ -28,6 +45,18 @@ export default class Game {
     this.envColliders = [];
     this.push = false;
     this.currentDirection;
+    this.boxHouses = [];
+    this.boxes = [];
+
+    this.particleArray = [];
+    this.slowMoFactor = 1;
+
+    this.cloudTargetPosX = 0.65;
+    this.cloudTargetPosY = 0.65;
+    this.cloudTargetSpeed = 0.65;
+    this.cloudTargetColor = 0.65;
+    this.cloudSlowMoFactor = 0.65;
+    this.gameOver = false;
 
     this.clock = new THREE.Clock();
 
@@ -37,6 +66,7 @@ export default class Game {
     this.setLights();
     // this.setOrbitControls();
     this.loadEnvironment(loader);
+    this.loadEnvironmentGlb(glbLoader);
 
     this.animate();
   }
@@ -64,38 +94,121 @@ export default class Game {
     this.setWorldFence();
     this.setBoxStoreHouses();
     this.loadPlayer();
+    this.createRocket();
   }
+
+  createRocket() {
+    this.rocket = new Rocket();
+    this.rocket.mesh.scale.set(0.2, 0.2, 0.2);
+    this.rocket.mesh.position.y = 80;
+    this.rocket.mesh.rotation.y = 1.5;
+    this.envColliders.push(this.rocket.mesh);
+    this.scene.add(this.rocket.mesh);
+  }
+
+  getParticle() {
+    let p;
+    if (this.particleArray.length > 0) {
+      p = this.particleArray.pop();
+    } else {
+      p = new Particle(this);
+    }
+    return p;
+  }
+
+  createSmoke = (rocket) => {
+    let p = this.getParticle();
+    this.dropParticle(p, rocket);
+  };
+
+  dropParticle = (p, rocket) => {
+    p.mesh.material.opacity = 1;
+    p.mesh.position.x = 0;
+    p.mesh.position.y = rocket.mesh.position.y - 80;
+    p.mesh.position.z = 0;
+    var s = Math.random(0.2) + 0.35;
+    p.mesh.scale.set(0.4 * s, 0.4 * s, 0.4 * s);
+    this.cloudTargetPosX = 0;
+    this.cloudTargetPosY = rocket.mesh.position.y - 500;
+    this.cloudTargetSpeed = 0.8 + Math.random() * 0.6;
+    this.cloudTargetColor = 0xa3a3a3;
+
+    TweenMax.to(
+      p.mesh.position,
+      1.3 * this.cloudTargetSpeed * this.cloudSlowMoFactor,
+      {
+        x: this.cloudTargetPosX,
+        y: this.cloudTargetPosY,
+        ease: Linear.easeNone,
+        onComplete: this.recycleParticle,
+        onCompleteParams: [p],
+      }
+    );
+
+    TweenMax.to(p.mesh.scale, this.cloudTargetSpeed * this.cloudSlowMoFactor, {
+      x: s * 1.8,
+      y: s * 1.8,
+      z: s * 1.8,
+      ease: Linear.ease,
+    });
+  };
+
+  recycleParticle(p) {
+    p.mesh.position.x = 0;
+    p.mesh.position.y = 0;
+    p.mesh.position.z = 0;
+    p.mesh.rotation.x = Math.random() * Math.PI * 2;
+    p.mesh.rotation.y = Math.random() * Math.PI * 2;
+    p.mesh.rotation.z = Math.random() * Math.PI * 2;
+    p.mesh.scale.set(0.1, 0.1, 0.1);
+    p.mesh.material.opacity = 0;
+    p.color = 0xe3e3e3;
+    p.mesh.material.color.set(p.color);
+    p.material.needUpdate = true;
+    return p;
+  }
+
+  updateParticles() {}
 
   loadBoxes() {
-    this.createBox(100, 50, "type1");
+    this.createBox(200, 50, 200, this.boxTypes["type2"]);
+    this.createBox(-200, 50, -200, this.boxTypes["type1"]);
+    this.createBox(200, 50, -200, this.boxTypes["type4"]);
+    this.createBox(-200, 50, 200, this.boxTypes["type3"]);
+
+    this.createBox(700, 50, 700, this.boxTypes["type2"]);
+    this.createBox(-700, 50, -700, this.boxTypes["type1"]);
+    this.createBox(700, 50, -700, this.boxTypes["type4"]);
+    this.createBox(-700, 50, 700, this.boxTypes["type3"]);
   }
 
-  createBox(x, height, type) {
-    let pos = { x: x, y: height, z: 0 };
-    let radius = 50;
-    let quat = { x: 0, y: 0, z: 0, w: 1 };
-    let mass = 1;
+  createBox(x, y, z, type) {
+    const { tag, color } = type;
+    let pos = { x: x, y: y, z: z };
+    // let radius = 50;
+    // let quat = { x: 0, y: 0, z: 0, w: 1 };
+    // let mass = 1
 
     const geometry = new THREE.BoxGeometry(50, 50, 50);
+    const material = new THREE.MeshLambertMaterial({ color });
 
-    const material = new THREE.MeshLambertMaterial({ color: "#ff7675" });
     const box = new THREE.Mesh(geometry, material);
-
     box.position.set(pos.x, pos.y, pos.z);
-
     box.castShadow = true;
+    box.userData.tag = tag;
     // box.receiveShadow = true;
     box.updateMatrixWorld();
 
-    // this.cubeBoxHelper = new THREE.BoxHelper(box, 0x00ff00);
-    // this.cubeBoxHelper.update();
-    // this.cubeBBox = new THREE.Box3();
-    // this.cubeBBox.setFromObject(this.cubeBoxHelper);
-    // this.cubeBoxHelper.visible = true;
-
-    // this.scene.add(this.cubeBoxHelper);
+    const cubeBoxHelper = new THREE.BoxHelper(box, 0x00ff00);
+    cubeBoxHelper.visible = false;
+    cubeBoxHelper.update();
+    const cubeBBox = new THREE.Box3();
+    cubeBBox.setFromObject(cubeBoxHelper);
+    this.boxes.push({ helper: cubeBoxHelper, cube: cubeBBox, tag });
     this.scene.add(box);
+    this.scene.add(cubeBoxHelper);
 
+    this.colliders.push(box);
     // //Ammo js Section
     // let transform = new Ammo.btTransform();
     // transform.setIdentity();
@@ -125,12 +238,11 @@ export default class Game {
 
     // box.userData.physicsBody = body;
     // this.rigidBodies.push(box);
-    this.colliders.push(box);
   }
 
   setRenderer() {
     this.scene = new THREE.Scene();
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setClearColor(0x000000, 1);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -149,13 +261,13 @@ export default class Game {
       1,
       20000
     );
-    this.camera.position.set(112, 100, 1100);
+
+    this.camera.position.set(0, 200, 0);
   }
 
   setLights() {
     this.scene.background = new THREE.Color(0x00a0f0);
     const ambient = new THREE.AmbientLight(0xaaaaaa);
-    this.scene.add(ambient);
 
     const light = new THREE.DirectionalLight(0xaaaaaa);
     light.position.set(30, 100, 40);
@@ -175,18 +287,70 @@ export default class Game {
 
     this.sun = light;
     this.scene.add(light);
+    this.scene.add(ambient);
   }
 
-  initLights() {}
+  initLights() {
+    const hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x000000, 0.9);
+
+    // an ambient light modifies the global color of a scene and makes the shadows softer
+    const ambientLight = new THREE.AmbientLight(0xccb8b4, 0.6);
+    this.scene.add(ambientLight);
+
+    // A directional light shines from a specific direction.
+    // It acts like the sun, that means that all the rays produced are parallel.
+    const shadowLight = new THREE.DirectionalLight(0xffffff, 0.8);
+
+    // Set the direction of the light
+    shadowLight.position.set(150, 150, 0);
+    shadowLight.castShadow = true;
+
+    // define the visible area of the projected shadow
+    shadowLight.shadow.camera.left = -800;
+    shadowLight.shadow.camera.right = 800;
+    shadowLight.shadow.camera.top = 800;
+    shadowLight.shadow.camera.bottom = -800;
+    shadowLight.shadow.camera.near = 1;
+    shadowLight.shadow.camera.far = 1200;
+
+    // res of shadow
+    shadowLight.shadow.mapSize.width = 2048;
+    shadowLight.shadow.mapSize.height = 2048;
+
+    const burnerLight = new THREE.DirectionalLight(Colors.thrusterOrange, 0.75);
+
+    burnerLight.position.set(0, -5, 0);
+    burnerLight.castShadow = true;
+
+    burnerLight.shadow.camera.left = -100;
+    burnerLight.shadow.camera.right = 100;
+    shadowLight.shadow.camera.top = 100;
+    burnerLight.shadow.camera.bottom = -100;
+    burnerLight.shadow.camera.near = 1;
+    burnerLight.shadow.camera.far = 1000;
+
+    burnerLight.shadow.mapSize.width = 2048;
+    burnerLight.shadow.mapSize.height = 2048;
+
+    this.scene.add(hemisphereLight);
+    this.scene.add(shadowLight);
+    this.scene.add(burnerLight);
+    this.scene.add(ambientLight);
+  }
 
   setWorld() {
-    let pos = { x: 0, y: 0, z: 0 };
-    let scale = { x: 2000, y: 0, z: 2000 };
-    let quat = { x: 0, y: 0, z: 0, w: 10 };
-    let mass = 0;
-
     const floor = new Floor();
     this.scene.add(floor);
+
+    const texture = new THREE.TextureLoader().load("../assets/gravel.jpg");
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(10, 10);
+
+    // var mesh = new THREE.Mesh(
+    //   new THREE.PlaneBufferGeometry(2000, 2000),
+    //   new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
+    // );
 
     var mesh = new THREE.Mesh(
       new THREE.PlaneBufferGeometry(2000, 2000),
@@ -195,6 +359,25 @@ export default class Game {
     mesh.rotation.x = -Math.PI / 2;
     mesh.receiveShadow = true;
     this.scene.add(mesh);
+
+    // SKY BOX
+
+    const tgaLoader = new THREE.TGALoader();
+    const bitmapLoader = new THREE.ImageBitmapLoader();
+    const image = "interstellar";
+    const imgType = ".tga";
+    const materialArray = this.createMaterialArray(image, imgType, tgaLoader);
+    const skyboxGeo = new THREE.BoxGeometry(5000, 5000, 5000);
+    const skybox = new THREE.Mesh(skyboxGeo, materialArray);
+    skybox.position.y = 600;
+
+    // this.scene.add(skybox);
+    // const ft = new THREE.TextureLoader().load("../assets/envmap_interstellar/interstellar_ft.jpg");
+    // const bk = new THREE.TextureLoader().load("purplenebula_bk.jpg");
+    // const up = new THREE.TextureLoader().load("purplenebula_up.jpg");
+    // const dn = new THREE.TextureLoader().load("purplenebula_dn.jpg");
+    // const rt = new THREE.TextureLoader().load("purplenebula_rt.jpg");
+    // const lf = new THREE.TextureLoader().load("purplenebula_lf.jpg");
 
     // let transform = new Ammo.btTransform();
     // transform.setIdentity();
@@ -222,7 +405,7 @@ export default class Game {
 
     // this.physicsWorld.addRigidBody(body);
 
-    var grid = new THREE.GridHelper(2000, 40, 0x000000, 0x000000);
+    var grid = new THREE.GridHelper(2000, 40, 0x000000, 0x999999);
     grid.material.opacity = 0.2;
     grid.position.y = 0;
     grid.material.transparent = true;
@@ -237,91 +420,80 @@ export default class Game {
   //   this.controls.target.set(0, 10, 0);
   //   this.controls.update();
   // }
+  createPathStrings(fileName, type) {
+    const basePath = "../assets/envmap/";
+    const baseFileName = basePath + fileName;
+    const sides = ["ft", "bk", "up", "dn", "rt", "lf"];
 
-  loadEnvironment(loader) {
-    this.fbxLoader(loader, "trees/tree1.fbx", 0, 155, 980, 0.8, 0);
-    this.fbxLoader(loader, "trees/tree4.fbx", 0, 130, -980, 0.8, 0);
-    this.fbxLoader(loader, "trees/tree3.fbx", 500, 100, 0, 0.5, 90);
+    const pathStrings = sides.map((side) => {
+      return baseFileName + "_" + side + type;
+    });
+    return pathStrings;
   }
 
-  fbxLoader(loader, path, x, y, z, scale, rot) {
+  createMaterialArray(fileName, type, loader) {
+    const skyboxImagepaths = this.createPathStrings(fileName, type);
+    const materialArray = skyboxImagepaths.map((image) => {
+      let texture = loader.load(image);
+      return new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.BackSide,
+      });
+    });
+    return materialArray;
+  }
+
+  loadEnvironment(loader) {
+    this.fbxLoader(loader, false, "trees/tree1.fbx", 0, 155, 980, 0.8, 0);
+    this.fbxLoader(loader, false, "trees/tree4.fbx", 0, 130, -980, 0.8, 0);
+    this.fbxLoader(loader, false, "trees/tree3.fbx", 500, 100, 0, 0.5, 90);
+    this.fbxLoader(loader, false, "trees/tree3.fbx", -500, 100, 0, 0.5, 90);
+  }
+
+  loadEnvironmentGlb(loader) {
+    // this.glbLoader(loader, "props/barrel.glb", 0, 155, 980, 0.8, 0);
+  }
+
+  glbLoader(loader, path, x, y, z, scale, rot) {
     const game = this;
-    loader.load(`${this.assetsPath}fbx/${path}`, function (object) {
-      object.traverse(function (child) {
+    loader.load(`${this.assetsPath}glb/${path}`, function (object) {
+      const sword = object.scene;
+      sword.traverse(function (child) {
         if (child.isMesh) {
-          child.material.map = null;
-          child.castShadow = true;
-          child.receiveShadow = false;
+          // child.castShadow = true;
+          // child.receiveShadow = true;
+          child.material.metalness = -5;
         }
       });
-      object.scale.multiplyScalar(scale);
-      object.position.set(x, y, z);
-      object.rotation.set(0, rot, 0);
-      game.scene.add(object);
-      // this.envColliders.push(object);
+      sword.scale.multiplyScalar(200);
+      sword.position.y = 4;
+      sword.position.z = 4;
+      sword.position.x = 4;
+      game.scene.add(sword);
     });
   }
 
-  glbLoader() {
-    // loader.load(`${this.assetsPath}fbx/trees/barrel.glb`, function (object) {
-    //   const sword = object.scene; // sword 3D object is loaded
-    //   sword.traverse(function (child) {
-    //     if (child.isMesh) {
-    //       child.castShadow = true;
-    //       child.receiveShadow = true;
-    //       child.material.metalness = 0;
-    //     }
-    //   });
-    //   sword.scale.set(200, 200, 200);
-    //   sword.position.y = 4;
-    //   sword.position.z = 4;
-    //   sword.position.x = 4;
-    //   game.scene.add(sword);
-    // });
-  }
-
-  loadObjects() {
-    let pos = { x: 200, y: 400, z: 0 };
-    let scale = { x: 50, y: 2, z: 50 };
-    let quat = { x: 0, y: 0, z: 0, w: 1 };
-    let mass = 0;
-
-    const geometry = new THREE.BoxGeometry(50, 50, 50);
-
-    const material = new THREE.MeshLambertMaterial({ color: "#81ecec" });
-    const cube = new THREE.Mesh(geometry, material);
-    cube.position.set(pos.x, pos.y, pos.z);
-    this.scene.add(cube);
-
-    //Ammojs Section
-    let transform = new Ammo.btTransform();
-    transform.setIdentity();
-    transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
-    transform.setRotation(
-      new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w)
-    );
-    let motionState = new Ammo.btDefaultMotionState(transform);
-
-    let colShape = new Ammo.btBoxShape(
-      new Ammo.btVector3(scale.x * 0.5, scale.y * 0.5, scale.z * 0.5)
-    );
-    colShape.setMargin(0.05);
-
-    let localInertia = new Ammo.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-
-    let rbInfo = new Ammo.btRigidBodyConstructionInfo(
-      mass,
-      motionState,
-      colShape,
-      localInertia
-    );
-    let body = new Ammo.btRigidBody(rbInfo);
-
-    this.physicsWorld.addRigidBody(body);
-
-    cube.userData.physicsBody = body;
-    this.rigidBodies.push(cube);
+  fbxLoader(loader, collisionBool = true, path, x, y, z, scale, rot) {
+    const game = this;
+    const newObject = new THREE.Object3D();
+    loader.load(`${this.assetsPath}fbx/${path}`, function (object) {
+      object.traverse(function (child) {
+        if (child.isMesh) {
+          // child.material.map = null;
+          child.castShadow = true;
+          child.receiveShadow = false;
+          newObject.add(object);
+          if (collisionBool) {
+            game.envColliders.push(child);
+          }
+        }
+      });
+      // this.envColliders.push(object.children);
+      newObject.scale.multiplyScalar(scale);
+      newObject.position.set(x, y, z);
+      newObject.rotation.set(0, rot, 0);
+      game.scene.add(newObject);
+    });
   }
 
   updatePhysics(deltaTime) {
@@ -355,7 +527,7 @@ export default class Game {
     front.position.set(112, 100, 600);
     front.parent = this.player.object;
     const back = new THREE.Object3D();
-    back.position.set(0, 400, -1500);
+    back.position.set(0, 800, -1500);
     back.parent = this.player.object;
     const chat = new THREE.Object3D();
     chat.position.set(0, 200, -450);
@@ -385,9 +557,16 @@ export default class Game {
       this.camera.position.lerp(newPosition, 0.2);
     }
     const pos = this.player.object.position.clone();
+
     pos.add(new THREE.Vector3(0, 50, 0));
-    // console.log('active', this.camera.position);
-    this.camera.lookAt(pos);
+
+    if (this.gameOver) {
+      const posx = this.rocket.mesh.position.clone();
+      posx.add(new THREE.Vector3(0, 50, 0));
+      this.camera.lookAt(posx);
+    } else {
+      this.camera.lookAt(pos);
+    }
   }
 
   onWindowResize() {
@@ -399,54 +578,9 @@ export default class Game {
 
   async loadPlayer() {
     this.player = new Player(this);
-
-    const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-
-    await delay(1000);
-
-    // if (this.player.object) {
-    //   this.sphereBoxHelper = new THREE.BoxHelper(this.player.object, 0x00ff00);
-    //   this.sphereBoxHelper.update();
-    //   this.sphereBBox = new THREE.Box3();
-    //   this.sphereBBox.setFromObject(this.sphereBoxHelper);
-    //   this.sphereBoxHelper.visible = true;
-    //   this.scene.add(this.sphereBoxHelper);
-    // }
-
-    // if (this.player.object) {
-    //   const mass = 100;
-    //   const pos = this.player.object.position.clone();
-    //   const quat = { x: 0, y: 0, z: 0, w: 1 };
-
-    //   let transform = new Ammo.btTransform();
-    //   transform.setIdentity();
-    //   transform.setOrigin(new Ammo.btVector3(pos.x, 20, pos.z));
-    //   transform.setRotation(
-    //     new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w)
-    //   );
-    //   let motionState = new Ammo.btDefaultMotionState(transform);
-
-    //   let colShape = new Ammo.btBoxShape(
-    //     new Ammo.btVector3(1 * 0.5, 1 * 0.5, 1 * 0.5)
-    //   );
-    //   colShape.setMargin(0.05);
-
-    //   let localInertia = new Ammo.btVector3(0, 0, 0);
-    //   colShape.calculateLocalInertia(mass, localInertia);
-
-    //   let rbInfo = new Ammo.btRigidBodyConstructionInfo(
-    //     mass,
-    //     motionState,
-    //     colShape,
-    //     localInertia
-    //   );
-    //   let body = new Ammo.btRigidBody(rbInfo);
-
-    //   this.physicsWorld.addRigidBody(body);
-
-    //   this.player.object.userData.physicsBody = body;
-    //   this.rigidBodies.push(this.player.object);
-    // }
+    // const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+    // await delay(1000);
+    // this.animate();
   }
 
   moveBox(dir) {
@@ -526,24 +660,33 @@ export default class Game {
   }
 
   setBoxStoreHouses() {
-    this.drawBoxHouse("#e84393", 880, 100, 880);
-    this.drawBoxHouse("#0984e3", -880, 100, -880);
-    this.drawBoxHouse("#fdcb6e", 880, 100, -880);
-    this.drawBoxHouse("#6c5ce7", -880, 100, 880);
+    this.drawBoxHouse(880, 100, 880, this.boxTypes["type1"]);
+    this.drawBoxHouse(-880, 100, -880, this.boxTypes["type2"]);
+    this.drawBoxHouse(880, 100, -880, this.boxTypes["type3"]);
+    this.drawBoxHouse(-880, 100, 880, this.boxTypes["type4"]);
   }
 
-  drawBoxHouse(color, x, y, z) {
+  drawBoxHouse(x, y, z, type) {
+    const { color, tag } = type;
     const geometry = new THREE.BoxGeometry(200, 200, 200);
-    const material = new THREE.MeshLambertMaterial({ color: "#81ecec" });
+    const material = new THREE.MeshLambertMaterial({ color: color });
     const box = new THREE.Mesh(geometry, material);
     box.position.set(x, y, z);
     const boxHelper = new THREE.BoxHelper(box, color);
+    box.visible = false;
+    box.userData.tag = tag;
+    boxHelper.update();
     this.scene.add(boxHelper);
+
+    const cubeBBox = new THREE.Box3();
+    cubeBBox.setFromObject(boxHelper);
+    this.scene.add(box);
+    this.boxHouses.push(cubeBBox);
   }
 
   setWorldFence() {
     const geometry = new THREE.BoxGeometry(2000, 80, 20);
-    const material = new THREE.MeshLambertMaterial({ color: "#81ecec" });
+    const material = new THREE.MeshLambertMaterial({ color: 0x999999 });
     const box1 = new THREE.Mesh(geometry, material);
     box1.position.set(0, 20, 1000);
     this.scene.add(box1);
@@ -571,6 +714,11 @@ export default class Game {
     const game = this;
 
     const dt = this.clock.getDelta();
+    const time = this.clock.getElapsedTime();
+
+    this.colliders.forEach((box) => {
+      box.position.y = Math.cos(time) * 7 + 50;
+    });
     this.updateRemotePlayers(dt);
     if (this.player.mixer != undefined) {
       this.player.mixer.update(dt);
@@ -586,20 +734,86 @@ export default class Game {
       this.sun.position.y += 10;
     }
 
+    if (this.gameOver && this.rocket.mesh.position.y < 1000) {
+      if (this.rocket.mesh.position.y < 180) {
+        this.rocket.mesh.position.y += 0.5;
+        this.rocket.mesh.position.x = Math.random() * Math.PI * 0.5;
+        this.rocket.mesh.rotation.x = Math.random() * Math.sin(1) * 0.04;
+        this.rocket.mesh.rotation.z = Math.random() * Math.sin(1) * 0.04;
+        this.rocket.mesh.position.z = Math.random() * Math.PI * 0.5;
+      } else {
+        this.rocket.mesh.position.y += 1;
+      }
+    } else {
+      this.rocket.mesh.rotation.y += Math.sin(1) * 0.02;
+    }
+
+    if (this.gameOver) {
+      setTimeout(() => {
+        this.createSmoke(this.rocket);
+      }, 1000);
+    }
+
     requestAnimationFrame(function () {
       game.animate();
     });
 
-    // if (this.sphereBoxHelper) {
-    //   this.sphereBoxHelper.update();
-    //   this.sphereBBox.setFromObject(this.sphereBoxHelper);
-    // }
-    // if (this.cubeBoxHelper) {
-    //   this.cubeBoxHelper.update();
-    //   this.cubeBBox.setFromObject(this.cubeBoxHelper);
-    // }
+    this.boxes.forEach((element) => {
+      element.helper.update();
+      element.cube.setFromObject(element.helper);
+
+      if (
+        element.tag === "TYPE_1" &&
+        this.boxHouses[0].intersectsBox(element.cube)
+      ) {
+        element.helper.visible = true;
+      } else if (
+        element.tag === "TYPE_2" &&
+        this.boxHouses[1].intersectsBox(element.cube)
+      ) {
+        element.helper.visible = true;
+      } else if (
+        element.tag === "TYPE_3" &&
+        this.boxHouses[2].intersectsBox(element.cube)
+      ) {
+        element.helper.visible = true;
+      } else if (
+        element.tag === "TYPE_4" &&
+        this.boxHouses[3].intersectsBox(element.cube)
+      ) {
+        element.helper.visible = true;
+      } else {
+        element.helper.visible = false;
+      }
+    });
+
+    if (this.boxes.every((element) => element.helper.visible === true)) {
+      this.gameOver = true;
+    }
 
     if (this.physicsWorld) game.updatePhysics(dt);
     this.renderer.render(this.scene, this.camera);
+  }
+}
+
+class Particle {
+  constructor(mGame) {
+    this.isFlying = false;
+    this.mGame = mGame;
+    var scale = 20 + Math.random() * 20;
+    var nLines = 3 + Math.floor(Math.random() * 5);
+    var nRows = 3 + Math.floor(Math.random() * 5);
+    this.geometry = new THREE.SphereGeometry(scale, nLines, nRows);
+
+    this.material = new THREE.MeshLambertMaterial({
+      color: 0xe3e3e3,
+      flatShading: THREE.FlatShading,
+      transparent: true,
+    });
+
+    this.mesh = new THREE.Mesh(this.geometry, this.material);
+    const x = mGame.recycleParticle(this);
+    mGame.scene.add(x.mesh);
+    mGame.particleArray.push(x);
   }
 }
