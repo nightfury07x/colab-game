@@ -179,7 +179,7 @@ export default class Game {
 
   setLights() {
     this.scene.background = new THREE.Color(0x00a0f0);
-    const ambient = new THREE.AmbientLight(0xaaaaaa);
+    const ambient = new THREE.AmbientLight(0xaaaaaa, 2);
     this.scene.add(ambient);
 
     const light = new THREE.DirectionalLight(0xaaaaaa);
@@ -205,7 +205,7 @@ export default class Game {
   initLights() {}
 
   setWorld() {
-    // this.scene.fog = new THREE.Fog("lightblue", 50, 6000);
+    this.scene.fog = new THREE.Fog("lightblue", 50, 4000);
     let pos = { x: 0, y: 0, z: 0 };
     let scale = { x: 2000, y: 0, z: 2000 };
     let quat = { x: 0, y: 0, z: 0, w: 10 };
@@ -214,13 +214,36 @@ export default class Game {
     const floor = new Floor();
     this.scene.add(floor);
 
+    const texture = new THREE.TextureLoader().load("../assets/gravel.jpg");
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(10, 10);
     var mesh = new THREE.Mesh(
       new THREE.PlaneBufferGeometry(2000, 2000),
-      new THREE.MeshPhongMaterial({ color: 0x999999, depthWrite: false })
+      new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
     );
     mesh.rotation.x = -Math.PI / 2;
     mesh.receiveShadow = true;
     this.scene.add(mesh);
+
+    // SKY BOX
+
+    const tgaLoader = new THREE.TGALoader();
+    const bitmapLoader = new THREE.ImageBitmapLoader();
+    const image = "interstellar";
+    const imgType = ".tga";
+    const materialArray = this.createMaterialArray(image, imgType, tgaLoader);
+    const skyboxGeo = new THREE.BoxGeometry(5000, 5000, 5000);
+    const skybox = new THREE.Mesh(skyboxGeo, materialArray);
+    skybox.position.y = 600;
+    console.log("!!!!!!!!!", materialArray);
+    this.scene.add(skybox);
+    // const ft = new THREE.TextureLoader().load("../assets/envmap_interstellar/interstellar_ft.jpg");
+    // const bk = new THREE.TextureLoader().load("purplenebula_bk.jpg");
+    // const up = new THREE.TextureLoader().load("purplenebula_up.jpg");
+    // const dn = new THREE.TextureLoader().load("purplenebula_dn.jpg");
+    // const rt = new THREE.TextureLoader().load("purplenebula_rt.jpg");
+    // const lf = new THREE.TextureLoader().load("purplenebula_lf.jpg");
 
     // let transform = new Ammo.btTransform();
     // transform.setIdentity();
@@ -263,26 +286,59 @@ export default class Game {
   //   this.controls.target.set(0, 10, 0);
   //   this.controls.update();
   // }
+  createPathStrings(fileName, type) {
+    const basePath = "../assets/envmap/";
+    const baseFileName = basePath + fileName;
+    const sides = ["ft", "bk", "up", "dn", "rt", "lf"];
+
+    const pathStrings = sides.map((side) => {
+      return baseFileName + "_" + side + type;
+    });
+    return pathStrings;
+  }
+
+  createMaterialArray(fileName, type, loader) {
+    const skyboxImagepaths = this.createPathStrings(fileName, type);
+    const materialArray = skyboxImagepaths.map((image) => {
+      let texture = loader.load(image);
+      return new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.BackSide,
+      });
+    });
+    return materialArray;
+  }
 
   loadEnvironment(loader) {
-    this.fbxLoader(loader, "trees/tree1.fbx", 0, 155, 980, 0.8, 0);
-    this.fbxLoader(loader, "trees/tree4.fbx", 0, 130, -980, 0.8, 0);
-    this.fbxLoader(loader, "trees/tree3.fbx", 500, 100, 0, 0.5, 90);
+    this.fbxLoader(loader, false, "trees/tree1.fbx", 0, 155, 980, 0.8, 0);
+    this.fbxLoader(loader, false, "trees/tree4.fbx", 0, 130, -980, 0.8, 0);
+    this.fbxLoader(loader, false, "trees/tree3.fbx", 500, 100, 0, 0.5, 90);
+    this.fbxLoader(loader, false, "trees/bush_03.fbx", 130, 0, -20, 0.5, 90);
+    this.fbxLoader(loader, false, "trees/bush_03.fbx", 200, 0, -20, 0.8, 45);
+    this.fbxLoader(loader, false, "trees/bush_03.fbx", 50, 0, -600, 0.5, 45);
+    this.fbxLoader(loader, false, "trees/bush_03.fbx", 20, 0, -600, 0.3, 45);
+    this.fbxLoader(loader, false, "trees/bush_03.fbx", 20, 0, -900, 1, 45);
+    this.fbxLoader(loader, false, "trees/bush_fixed.fbx", 300, 0, 0, 0.5, 90);
+    this.fbxLoader(loader, true, "trees/rock_fixed.fbx", 150, 0, 40, 0.5, 90);
+    this.fbxLoader(loader, true, "trees/rock3_fixed.fbx", 120, 0, 40, 2, 90);
+    // this.fbxLoader(loader, "trees/rock_fixed.fbx", 120, 0, 40, 0.3, 90);
   }
-  loadEnvironmentGlb(loader) {
-    this.glbLoader(loader, `${this.assetsPath}fbx/trees/barrel.glb`);
-  }
-  fbxLoader(loader, path, x, y, z, scale, rot) {
+  // loadEnvironmentGlb(loader) {
+  //   this.glbLoader(loader, `${this.assetsPath}fbx/trees/barrel.glb`);
+  // }
+  fbxLoader(loader, collisionBool = true, path, x, y, z, scale, rot) {
     const game = this;
     const newObject = new THREE.Object3D();
     loader.load(`${this.assetsPath}fbx/${path}`, function (object) {
       object.traverse(function (child) {
         if (child.isMesh) {
-          child.material.map = null;
+          // child.material.map = null;
           child.castShadow = true;
           child.receiveShadow = false;
-          game.envColliders.push(child);
           newObject.add(object);
+          if (collisionBool) {
+            game.envColliders.push(child);
+          }
         }
       });
       // this.envColliders.push(object.children);
@@ -611,6 +667,11 @@ export default class Game {
     const game = this;
 
     const dt = this.clock.getDelta();
+    const time = this.clock.getElapsedTime();
+
+    this.colliders.forEach((box) => {
+      box.position.y = Math.cos(time) * 7 + 50;
+    });
     this.updateRemotePlayers(dt);
     if (this.player.mixer != undefined) {
       this.player.mixer.update(dt);
