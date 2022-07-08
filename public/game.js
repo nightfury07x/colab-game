@@ -135,6 +135,11 @@ export default class Game {
     this.rocket.mesh.rotation.y = 1.5;
     this.envColliders.push(this.rocket.mesh);
     this.scene.add(this.rocket.mesh);
+
+    let base = new Base();
+    base.mesh.position.y = 5;
+    base.mesh.scale.set(1, 0.2, 1);
+    this.scene.add(base.mesh);
   }
 
   getParticle() {
@@ -301,7 +306,6 @@ export default class Game {
   setLights() {
     this.scene.background = new THREE.Color(0x00a0f0);
     const ambient = new THREE.AmbientLight(0xaaaaaa);
-
     const light = new THREE.DirectionalLight(0xaaaaaa);
     light.position.set(30, 100, 40);
     light.target.position.set(0, 0, 0);
@@ -385,7 +389,7 @@ export default class Game {
 
     this.scene.add(skybox);
 
-    // this.scene.fog = new THREE.Fog("white", 100, 6000);
+    this.scene.fog = new THREE.Fog("white", 1000, 5000);
 
     // const floor = new Floor();
     // this.scene.add(floor);
@@ -846,5 +850,19 @@ class Particle {
     const x = mGame.recycleParticle(this);
     mGame.scene.add(x.mesh);
     mGame.particleArray.push(x);
+  }
+}
+
+class Base {
+  constructor() {
+    this.mesh = new THREE.Object3D();
+    let geo = new THREE.CylinderGeometry(70, 80, 50, 8);
+    let mat = new THREE.MeshLambertMaterial({
+      color: "#e17055",
+    });
+    let m = new THREE.Mesh(geo, mat);
+    m.castShadow = true;
+    // m.receiveShadow = true;
+    this.mesh.add(m);
   }
 }
