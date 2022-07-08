@@ -67,7 +67,7 @@ export default class Game {
     // this.setOrbitControls();
     this.loadEnvironment(loader);
     // this.loadEnvironmentGlb(glbLoader);
-    window.addEventListener( 'resize', () => this.onWindowResize(), false );
+    window.addEventListener("resize", () => this.onWindowResize(), false);
     this.loadEnvironmentGlb(glbLoader);
 
     this.animate();
@@ -101,34 +101,31 @@ export default class Game {
   startTimer() {
     const startingMinutes = 5;
     this.time = startingMinutes * 60;
-    this.countdownEl = document.getElementById('timer');
-    console.log('CD', this.countdownEl)
+    this.countdownEl = document.getElementById("timer");
+    console.log("CD", this.countdownEl);
     this.timerInterval = setInterval(this.updateTimer.bind(this), 1000);
-    setTimeout(this.gameOver.bind(this), 30100);
+    setTimeout(this.gameOverMain.bind(this), 30100);
   }
 
   updateTimer() {
-    const minutes = Math.floor(this.time/60);
+    const minutes = Math.floor(this.time / 60);
     let seconds = this.time % 60;
     // console.log('CDDDDD', this)
-    seconds = seconds < 10 ? '0' + seconds : seconds;
+    seconds = seconds < 10 ? "0" + seconds : seconds;
     this.countdownEl.innerHTML = `${minutes}:${seconds}`;
-    this.time --;
-
+    this.time--;
   }
 
-  gameOver() {
+  gameOverMain() {
     clearInterval(this.timerInterval);
-    console.log('GameOver');
+    console.log("GameOver");
     // this.toggleScreen('gameover-screen', true);
     // this.toggleScreen('canvas', false);
-
-
   }
 
   toggleScreen(id, toggle) {
     let el = document.getElementById(id);
-    let display = (toggle)? 'block' : NamedNodeMap;
+    let display = toggle ? "block" : NamedNodeMap;
     el.style.display = display;
   }
   createRocket() {
@@ -393,7 +390,12 @@ export default class Game {
     var mesh = new THREE.Mesh(
       new THREE.PlaneBufferGeometry(2000, 2000),
       // new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, metalness: 0})
-      new THREE.MeshPhongMaterial({ color: 0x999999, depthWrite: false })
+      new THREE.MeshPhongMaterial({
+        color: "red",
+        depthWrite: false,
+        reflectivity: 0.0,
+        shininess: 0,
+      })
     );
     mesh.rotation.x = -Math.PI / 2;
     mesh.receiveShadow = true;
@@ -623,7 +625,7 @@ export default class Game {
   }
 
   onWindowResize() {
-    console.log('RESIZING');
+    console.log("RESIZING");
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
 
@@ -776,7 +778,8 @@ export default class Game {
 
     this.skybox.position.y = Math.cos(time + 120) * 35;
     // this.camera.position.y = Math.cos(time + 120) * 2 + 100;
-    this.skybox.rotation.y += (dt / 40);
+    this.skybox.rotation.y += dt / 40;
+
     this.updateRemotePlayers(dt);
     if (this.player.mixer != undefined) {
       this.player.mixer.update(dt);
