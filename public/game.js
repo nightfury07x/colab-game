@@ -171,6 +171,8 @@ export default class Game {
   updateParticles() {}
 
   loadBoxes() {
+    // this.createBox(-700, 50, -700, this.boxTypes["type2"]);
+
     this.createBox(200, 50, 200, this.boxTypes["type2"]);
     this.createBox(-200, 50, -200, this.boxTypes["type1"]);
     this.createBox(200, 50, -200, this.boxTypes["type4"]);
@@ -744,6 +746,7 @@ export default class Game {
       } else {
         this.rocket.mesh.position.y += 1;
       }
+      this.rocket.mesh.rotation.y += Math.sin(1) * 0.02;
     } else {
       this.rocket.mesh.rotation.y += Math.sin(1) * 0.02;
     }

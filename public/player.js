@@ -240,6 +240,12 @@ class Player {
           this.action = anim;
           break;
         case "backward":
+          // if (intersect1.length > 0) {
+          //   if (intersect1[0].distance < 60) {
+          //     return;
+          //   }
+          // }
+
           this.object.position.add(
             this.currDir.clone().multiplyScalar((dt * -speed) / 2)
           );
