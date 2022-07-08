@@ -140,6 +140,7 @@ export default class Game {
     base.mesh.position.y = 5;
     base.mesh.scale.set(1, 0.2, 1);
     this.scene.add(base.mesh);
+    this.envColliders.push(base.mesh);
   }
 
   getParticle() {
