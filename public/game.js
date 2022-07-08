@@ -84,7 +84,10 @@ export default class Game {
     this.setWorldFence();
     this.setBoxStoreHouses();
     this.loadPlayer();
+    this.createRocket();
   }
+
+  createRocket() {}
 
   loadBoxes() {
     this.createBox(50, 50, 50, this.boxTypes["type1"]);
@@ -265,7 +268,6 @@ export default class Game {
     this.fbxLoader(loader, "trees/tree1.fbx", 0, 155, 980, 0.8, 0);
     this.fbxLoader(loader, "trees/tree4.fbx", 0, 130, -980, 0.8, 0);
     this.fbxLoader(loader, "trees/tree3.fbx", 500, 100, 0, 0.5, 90);
-    this.fbxLoader(loader, "survival/barrel.fbx", 300, 100, 0, 1, 90);
   }
   loadEnvironmentGlb(loader) {
     this.glbLoader(loader, `${this.assetsPath}fbx/trees/barrel.glb`);
@@ -631,10 +633,31 @@ export default class Game {
     this.boxes.forEach((element) => {
       element.helper.update();
       element.cube.setFromObject(element.helper);
-    });
 
-    if (this.boxHouses[0].intersectsBox(this.boxes[0].cube)) {
-    }
+      if (
+        element.tag === "TYPE_1" &&
+        this.boxHouses[0].intersectsBox(element.cube)
+      ) {
+        element.helper.visible = true;
+      } else if (
+        element.tag === "TYPE_2" &&
+        this.boxHouses[1].intersectsBox(element.cube)
+      ) {
+        element.helper.visible = true;
+      } else if (
+        element.tag === "TYPE_3" &&
+        this.boxHouses[2].intersectsBox(element.cube)
+      ) {
+        element.helper.visible = true;
+      } else if (
+        element.tag === "TYPE_4" &&
+        this.boxHouses[3].intersectsBox(element.cube)
+      ) {
+        element.helper.visible = true;
+      } else {
+        element.helper.visible = false;
+      }
+    });
 
     if (this.physicsWorld) game.updatePhysics(dt);
     this.renderer.render(this.scene, this.camera);
